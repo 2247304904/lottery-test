@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🎰 幸运大抽奖</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            overflow-x: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 420px;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 24px;
+            padding: 28px 22px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3), 0 0 0 1px rgba(255,255,255,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,215,0,0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            color: #333;
+            margin-bottom: 6px;
+            background: linear-gradient(90deg, #667eea, #764ba2, #f093fb);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: #888;
+            font-size: 13px;
+        }
+
+        .lottery-box {
+            background: linear-gradient(145deg, #fff8e1, #ffecb3);
+            border-radius: 20px;
+            padding: 30px 20px;
+            text-align: center;
+            margin-bottom: 20px;
+            position: relative;
+            z-index: 1;
+            border: 2px solid #ffd700;
+            box-shadow: inset 0 0 20px rgba(255,215,0,0.2), 0 4px 15px rgba(255,193,7,0.3);
+        }
+
+        .amount-display {
+            font-size: 72px;
+            font-weight: 900;
+            color: #e65100;
+            line-height: 1;
+            margin: 10px 0;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            transition: all 0.1s ease;
+            font-family: 'Arial Black', sans-serif;
+        }
+
+        .amount-display.rolling {
+            color: #ff6f00;
+            transform: scale(1.1);
+        }
+
+        .amount-label {
+            font-size: 14px;
+            color: #999;
+            margin-top: 8px;
+        }
+
+        .draw-btn {
+            width: 100%;
+            padding: 16px;
+            margin-top: 18px;
+            border: none;
+            border-radius: 14px;
+            font-size: 20px;
+            font-weight: 700;
+            color: white;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            background: linear-gradient(135deg, #ff6b6b, #ee5a5a);
+            box-shadow: 0 6px 20px rgba(238,90,90,0.4);
+        }
+
+        .draw-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(238,90,90,0.5);
+        }
+
+        .draw-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .draw-btn:disabled {
+            background: linear-gradient(135deg, #ccc, #bbb);
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .draw-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(255,255,255,0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .draw-btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .input-group {
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.1);
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-radius: 14px;
+            padding: 14px 18px;
+            margin-bottom: 18px;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-item .number {
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .stat-item .label {
+            font-size: 11px;
+            opacity: 0.9;
+            margin-top: 2px;
+        }
+
+        .history-section {
+            position: relative;
+            z-index: 1;
+        }
+
+        .history-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .history-header h3 {
+            font-size: 15px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .reset-btn {
+            background: none;
+            border: 1px solid #ddd;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 12px;
+            color: #999;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .reset-btn:hover {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .history-list {
+            max-height: 280px;
+            overflow-y: auto;
+            border-radius: 12px;
+            background: #f8f9fa;
+            padding: 4px;
+        }
+
+        .history-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .history-list::-webkit-scrollbar-thumb {
+            background: #ddd;
+            border-radius: 4px;
+        }
+
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 14px;
+            background: white;
+            border-radius: 10px;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+            animation: slideIn 0.4s ease;
+            border-left: 3px solid #667eea;
+        }
+
+        .history-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-item.new {
+            animation: popIn 0.5s ease;
+            border-left-color: #ff6b6b;
+            background: linear-gradient(90deg, #fff5f5, white);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                opacity: 0;
+                transform: scale(0.8) translateY(10px);
+            }
+            60% {
+                transform: scale(1.05) translateY(-2px);
+            }
+            100% {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+            }
+        }
+
+        .history-item .info {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .history-item .name {
+            font-size: 14px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .history-item .time {
+            font-size: 11px;
+            color: #aaa;
+        }
+
+        .history-item .amount {
+            font-size: 20px;
+            font-weight: 700;
+            color: #e65100;
+        }
+
+        .history-item .amount::after {
+            content: '元';
+            font-size: 12px;
+            margin-left: 2px;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #bbb;
+        }
+
+        .empty-state .emoji {
+            font-size: 48px;
+            margin-bottom: 10px;
+            display: block;
+        }
+
+        .empty-state p {
+            font-size: 14px;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            top: -10px;
+            z-index: 9999;
+            pointer-events: none;
+        }
+
+        .progress-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 12px;
+        }
+
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #e0e0e0;
+            transition: all 0.3s ease;
+        }
+
+        .progress-dot.active {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            transform: scale(1.3);
+        }
+
+        .progress-dot.used {
+            background: #ff6b6b;
+        }
+
+        .total-bar {
+            background: linear-gradient(135deg, #11998e, #38ef7d);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 14px;
+            text-align: center;
+            color: white;
+            position: relative;
+            z-index: 1;
+        }
+
+        .total-bar .total-label {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .total-bar .total-amount {
+            font-size: 32px;
+            font-weight: 900;
+            margin-top: 4px;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 24px;
+            font-size: 14px;
+            z-index: 10000;
+            transition: transform 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            white-space: nowrap;
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        .firework {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+        }
+
+        @media (max-width: 480px) {
+            .container {
+                padding: 22px 16px;
+                border-radius: 20px;
+            }
+            .amount-display {
+                font-size: 60px;
+            }
+        }
+    </style>
+<base target="_blank">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎰 幸运大抽奖</h1>
+            
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-item">
+                <div class="number" id="remainCount">10</div>
+                <div class="label">剩余次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="drawnCount">0</div>
+                <div class="label">已抽次数</div>
+            </div>
+            <div class="stat-item">
+                <div class="number" id="avgAmount">0</div>
+                <div class="label">平均金额</div>
+            </div>
+        </div>
+
+        <div class="input-group">
+            <label>👤 输入你的微信昵称</label>
+            <input type="text" id="wxName" placeholder="例如：小可爱、大佬..." maxlength="20">
+        </div>
+
+        <div class="lottery-box">
+            <div class="amount-display" id="amountDisplay">?</div>
+            <div class="amount-label">点击按钮开始抽奖</div>
+            <button class="draw-btn" id="drawBtn" onclick="startDraw()">🎯 立即抽奖</button>
+            <div class="progress-dots" id="progressDots"></div>
+        </div>
+
+        <div class="total-bar" id="totalBar" style="display:none;">
+            <div class="total-label">💰 累计中奖金额</div>
+            <div class="total-amount" id="totalAmount">0 元</div>
+        </div>
+
+        <div class="history-section">
+            <div class="history-header">
+                <h3>📋 抽奖记录</h3>
+                <button class="reset-btn" onclick="resetAll()">🗑️ 清空记录</button>
+            </div>
+            <div class="history-list" id="historyList">
+                <div class="empty-state">
+                    <span class="emoji">🎁</span>
+                    <p>还没有抽奖记录，快来试试吧！</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        const MAX_DRAWS = 10;
+        let isDrawing = false;
+        let history = JSON.parse(localStorage.getItem('lotteryHistory') || '[]');
+
+        function init() {
+            renderProgressDots();
+            updateStats();
+            renderHistory();
+        }
+
+        function renderProgressDots() {
+            const container = document.getElementById('progressDots');
+            const drawn = history.length;
+            container.innerHTML = '';
+            for (let i = 0; i < MAX_DRAWS; i++) {
+                const dot = document.createElement('div');
+                dot.className = 'progress-dot' + (i < drawn ? ' used' : '') + (i === drawn && drawn < MAX_DRAWS ? ' active' : '');
+                container.appendChild(dot);
+            }
+        }
+
+        function updateStats() {
+            const drawn = history.length;
+            const remain = MAX_DRAWS - drawn;
+            const total = history.reduce((sum, item) => sum + item.amount, 0);
+            const avg = drawn > 0 ? (total / drawn).toFixed(1) : 0;
+
+            document.getElementById('remainCount').textContent = remain;
+            document.getElementById('drawnCount').textContent = drawn;
+            document.getElementById('avgAmount').textContent = avg;
+
+            const totalBar = document.getElementById('totalBar');
+            const totalAmount = document.getElementById('totalAmount');
+            if (drawn > 0) {
+                totalBar.style.display = 'block';
+                totalAmount.textContent = total + ' 元';
+            } else {
+                totalBar.style.display = 'none';
+            }
+
+            const btn = document.getElementById('drawBtn');
+            if (remain <= 0) {
+                btn.disabled = true;
+                btn.textContent = '✅ 抽奖已结束';
+            } else {
+                btn.disabled = false;
+                btn.textContent = '🎯 立即抽奖';
+            }
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            if (history.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <span class="emoji">🎁</span>
+                        <p>还没有抽奖记录，快来试试吧！</p>
+                    </div>
+                `;
+                return;
+            }
+
+            list.innerHTML = history.slice().reverse().map((item, index) => `
+                <div class="history-item ${index === 0 ? 'new' : ''}">
+                    <div class="info">
+                        <span class="name">${escapeHtml(item.name)}</span>
+                        <span class="time">${item.time}</span>
+                    </div>
+                    <div class="amount">${item.amount}</div>
+                </div>
+            `).join('');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        function startDraw() {
+            if (isDrawing) return;
+
+            const nameInput = document.getElementById('wxName');
+            const name = nameInput.value.trim();
+
+            if (!name) {
+                showToast('⚠️ 请先输入你的微信昵称！');
+                nameInput.focus();
+                nameInput.style.borderColor = '#ff6b6b';
+                setTimeout(() => nameInput.style.borderColor = '', 2000);
+                return;
+            }
+
+            if (history.length >= MAX_DRAWS) {
+                showToast('🎉 你已经抽完10次啦！');
+                return;
+            }
+
+            isDrawing = true;
+            const btn = document.getElementById('drawBtn');
+            const display = document.getElementById('amountDisplay');
+            const label = document.querySelector('.amount-label');
+
+            btn.disabled = true;
+            btn.textContent = '🔮 抽奖中...';
+            label.textContent = '好运正在降临...';
+            display.classList.add('rolling');
+
+            // 滚动动画
+            let rollCount = 0;
+            const maxRolls = 25;
+            const rollInterval = setInterval(() => {
+                display.textContent = Math.floor(Math.random() * 50) + 1;
+                rollCount++;
+                if (rollCount >= maxRolls) {
+                    clearInterval(rollInterval);
+                    finalizeDraw(name);
+                }
+            }, 80);
+        }
+
+        function finalizeDraw(name) {
+            const amount = Math.floor(Math.random() * 50) + 1;
+            const display = document.getElementById('amountDisplay');
+            const label = document.querySelector('.amount-label');
+            const btn = document.getElementById('drawBtn');
+
+            display.textContent = amount;
+            display.classList.remove('rolling');
+
+            const now = new Date();
+            const timeStr = `${now.getMonth()+1}月${now.getDate()}日 ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+            const record = {
+                name: name,
+                amount: amount,
+                time: timeStr,
+                timestamp: now.getTime()
+            };
+
+            history.push(record);
+            localStorage.setItem('lotteryHistory', JSON.stringify(history));
+
+            label.textContent = `🎉 恭喜抽中 ${amount} 元！`;
+
+            // 特效
+            createConfetti();
+            if (amount >= 40) {
+                createFirework();
+                showToast(`🎊 太厉害了！抽中了 ${amount} 元！`);
+            } else if (amount >= 30) {
+                showToast(`✨ 不错哦！抽中了 ${amount} 元！`);
+            } else {
+                showToast(`🎈 抽中了 ${amount} 元，再试一次！`);
+            }
+
+            renderProgressDots();
+            updateStats();
+            renderHistory();
+
+            isDrawing = false;
+
+            if (history.length < MAX_DRAWS) {
+                btn.disabled = false;
+                btn.textContent = '🎯 再抽一次';
+            }
+        }
+
+        function createConfetti() {
+            const colors = ['#ff6b6b', '#feca57', '#48dbfb', '#ff9ff3', '#54a0ff', '#5f27cd', '#00d2d3', '#ff9f43'];
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
+                confetti.style.width = (Math.random() * 8 + 4) + 'px';
+                confetti.style.height = (Math.random() * 8 + 4) + 'px';
+                confetti.style.animation = `fall ${Math.random() * 2 + 1}s linear forwards`;
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }
+        }
+
+        function createFirework() {
+            const colors = ['#ff6b6b', '#ffd700', '#ff9ff3', '#48dbfb'];
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+
+            for (let i = 0; i < 30; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'firework';
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                particle.style.width = '6px';
+                particle.style.height = '6px';
+                particle.style.borderRadius = '50%';
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+
+                const angle = (Math.PI * 2 * i) / 30;
+                const velocity = Math.random() * 150 + 50;
+                const tx = Math.cos(angle) * velocity;
+                const ty = Math.sin(angle) * velocity;
+
+                particle.style.transition = 'all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+                document.body.appendChild(particle);
+
+                requestAnimationFrame(() => {
+                    particle.style.transform = `translate(${tx}px, ${ty}px) scale(0)`;
+                    particle.style.opacity = '0';
+                });
+
+                setTimeout(() => particle.remove(), 1000);
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        function resetAll() {
+            if (history.length === 0) return;
+            if (!confirm('确定要清空所有抽奖记录吗？')) return;
+            history = [];
+            localStorage.removeItem('lotteryHistory');
+            document.getElementById('amountDisplay').textContent = '?';
+            document.querySelector('.amount-label').textContent = '点击按钮开始抽奖';
+            renderProgressDots();
+            updateStats();
+            renderHistory();
+            showToast('🗑️ 记录已清空');
+        }
+
+        // 添加CSS动画
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes fall {
+                to {
+                    transform: translateY(100vh) rotate(720deg);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+
+        // 初始化
+        init();
+    </script>
+</body>
+</html>
